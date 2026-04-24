@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Harmony Lab Cart Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: transparent;
+  }
+
+  /* Bouton flottant */
+  #cart-toggle {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 9999;
+    background: #111;
+    color: #fff;
+    border-radius: 999px;
+    border: none;
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+  }
+
+  /* Panneau latéral */
+  #cart-panel {
+    position: fixed;
+    top: 0;
+    right: -380px;
+    width: 340px;
+    height: 100vh;
+    background: #ffffff;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.12);
+    z-index: 9998;
+    display: flex;
+    flex-direction: column;
+    transition: right 0.3s ease;
+  }
+
+  #cart-panel.open {
+    right: 0;
+  }
+
+  #cart-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  #cart-header button {
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  #cart-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 20px;
+  }
+
+  #cart-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 13px;
+  }
+
+  #cart-items li {
+    padding: 8px 0;
+    border-bottom: 1px solid #f2f2f2;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  #cart-footer {
+    padding: 16px 20px;
+    border-top: 1px solid #eee;
+  }
+
+  #checkout-button {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: none;
+    background: #111;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+  }
+</style>
+</head>
+
+<body>
+
+<!-- Bouton flottant -->
+<button id="cart-toggle" onclick="openCart()">
+  🛒 <span id="cart-count">0</span> items
+</button>
+
+<!-- Panneau latéral -->
+<div id="cart-panel">
+  <div id="cart-header">
+    <span>Your selection</span>
+    <button onclick="closeCart()">✕</button>
+  </div>
+
+  <div id="cart-body">
+    <ul id="cart-items">
+      <li style="border:none; opacity:0.7;">No items selected yet.</li>
+    </ul>
+  </div>
+
+  <div id="cart-footer">
+    <button id="checkout-button" onclick="checkout()">Checkout</button>
+  </div>
+</div>
+
+<script>
+  let selectedItems = [];
+
+  // Appelé depuis Google Sites via postMessage
+  window.addEventListener("message", (event) => {
+    if (event.data.type === "addItem") {
+      addToSelection(event.data.priceId, event.data.name);
+    }
+  });
+
+  function addToSelection(priceId, name) {
+    selectedItems.push({ price: priceId, name: name, quantity: 1 });
+    updateCartCount();
+    updateCartPanel();
+  }
+
+  function updateCartCount() {
+    document.getElementById("cart-count").textContent = selectedItems.length;
+  }
+
+  function updateCartPanel() {
+    const list = document.getElementById("cart-items");
+    list.innerHTML = "";
+
+    if (selectedItems.length === 0) {
+      list.innerHTML = "<li style='border:none; opacity:0.7;'>No items selected yet.</li>";
+      return;
+    }
+
+    selectedItems.forEach(item => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <span>${item.name}</span>
+        <span>x${item.quantity}</span>
+      `;
+      list.appendChild(li);
+    });
+  }
+
+  function openCart() {
+    document.getElementById("cart-panel").classList.add("open");
+  }
+
+  function closeCart() {
+    document.getElementById("cart-panel").classList.remove("open");
+  }
+
+  async function checkout() {
+    if (selectedItems.length === 0) {
+      alert("Your selection is empty.");
+      return;
+    }
+
+    const res = await fetch("https://TON-BACKEND/create-checkout-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: selectedItems })
+    });
+
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+  }
+</script>
+
+</body>
+</html>

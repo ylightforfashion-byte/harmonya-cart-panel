@@ -1,196 +1,627 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Harmony Lab Cart Panel</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <title>Harmony Lab Cart Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --cart-bg: #0b0b0b;
+      --cart-fg: #ffffff;
+      --cart-accent: #ffffff;
+      --cart-muted: #888888;
+      --cart-border: #222222;
+      --cart-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+      --cart-radius: 18px;
+      --cart-font: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      --cart-danger: #ff4b4b;
+      --cart-input-bg: #151515;
+    }
 
-<style>
-  body {
-    margin: 0;
-    font-family: system-ui, sans-serif;
-    background: transparent;
-  }
+    * {
+      box-sizing: border-box;
+    }
 
-  /* Bouton flottant */
-  #cart-toggle {
-    position: fixed;
-    right: 20px;
-    bottom: 20px;
-    z-index: 9999;
-    background: #111;
-    color: #fff;
-    border-radius: 999px;
-    border: none;
-    padding: 10px 16px;
-    font-size: 14px;
-    cursor: pointer;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
-  }
+    body {
+      margin: 0;
+      font-family: var(--cart-font);
+      background: transparent;
+      color: var(--cart-fg);
+    }
 
-  /* Panneau latéral */
-  #cart-panel {
-    position: fixed;
-    top: 0;
-    right: -380px;
-    width: 340px;
-    height: 100vh;
-    background: #ffffff;
-    box-shadow: -4px 0 20px rgba(0,0,0,0.12);
-    z-index: 9998;
-    display: flex;
-    flex-direction: column;
-    transition: right 0.3s ease;
-  }
+    .cart-toggle {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: #000;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+      font-size: 14px;
+      z-index: 9999;
+      transition: background 0.2s ease, transform 0.15s ease;
+    }
 
-  #cart-panel.open {
-    right: 0;
-  }
+    .cart-toggle:hover {
+      background: #222;
+      transform: translateY(-1px);
+    }
 
-  #cart-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-weight: 600;
-    font-size: 14px;
-  }
+    .cart-toggle-icon {
+      font-size: 16px;
+    }
 
-  #cart-header button {
-    border: none;
-    background: transparent;
-    font-size: 18px;
-    cursor: pointer;
-  }
+    .cart-toggle-count {
+      background: #fff;
+      color: #000;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 22px;
+      text-align: center;
+    }
 
-  #cart-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px 20px;
-  }
+    .cart-panel-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      z-index: 9998;
+    }
 
-  #cart-items {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    font-size: 13px;
-  }
+    .cart-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(420px, 100%);
+      height: 100%;
+      background: var(--cart-bg);
+      color: var(--cart-fg);
+      box-shadow: var(--cart-shadow);
+      transform: translateX(100%);
+      transition: transform 0.25s ease-out;
+      display: flex;
+      flex-direction: column;
+      z-index: 9999;
+    }
 
-  #cart-items li {
-    padding: 8px 0;
-    border-bottom: 1px solid #f2f2f2;
-    display: flex;
-    justify-content: space-between;
-    gap: 8px;
-  }
+    .cart-panel.open {
+      transform: translateX(0);
+    }
 
-  #cart-footer {
-    padding: 16px 20px;
-    border-top: 1px solid #eee;
-  }
+    .cart-panel-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--cart-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-  #checkout-button {
-    width: 100%;
-    padding: 10px 14px;
-    border-radius: 999px;
-    border: none;
-    background: #111;
-    color: #fff;
-    font-size: 14px;
-    cursor: pointer;
-  }
-</style>
+    .cart-panel-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .cart-panel-close {
+      background: transparent;
+      border: none;
+      color: var(--cart-muted);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .cart-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px 80px;
+    }
+
+    .cart-empty {
+      text-align: center;
+      color: var(--cart-muted);
+      font-size: 14px;
+      margin-top: 40px;
+    }
+
+    .cart-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--cart-border);
+    }
+
+    .cart-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cart-item-name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .cart-item-price {
+      font-size: 14px;
+      color: var(--cart-fg);
+    }
+
+    .cart-item-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .cart-qty-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .cart-qty-btn {
+      background: #111;
+      color: #fff;
+      border: 1px solid #222;
+      border-radius: 999px;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0;
+    }
+
+    .cart-qty-input {
+      width: 52px;
+      background: var(--cart-input-bg);
+      border: 1px solid #222;
+      border-radius: 999px;
+      color: #fff;
+      font-size: 13px;
+      padding: 4px 8px;
+      text-align: center;
+      -moz-appearance: textfield;
+    }
+
+    .cart-qty-input::-webkit-outer-spin-button,
+    .cart-qty-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .cart-item-subtotal {
+      font-size: 13px;
+      color: var(--cart-muted);
+    }
+
+    .cart-item-remove {
+      background: transparent;
+      border: none;
+      color: var(--cart-danger);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+    }
+
+    .cart-panel-footer {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: min(420px, 100%);
+      background: var(--cart-bg);
+      border-top: 1px solid var(--cart-border);
+      padding: 12px 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 10000;
+    }
+
+    .cart-total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .cart-total-label {
+      color: var(--cart-muted);
+    }
+
+    .cart-total-value {
+      font-weight: 600;
+    }
+
+    .cart-checkout-btn {
+      margin-top: 6px;
+      background: #ffffff;
+      color: #000000;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+    }
+
+    .cart-checkout-btn:hover {
+      background: #f5f5f5;
+      transform: translateY(-1px);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .cart-checkout-sub {
+      font-size: 11px;
+      color: var(--cart-muted);
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    .page-wrapper {
+      min-height: 100vh;
+      padding: 20px;
+      color: #fff;
+      background: transparent;
+    }
+  </style>
 </head>
-
 <body>
+  <div class="page-wrapper"></div>
 
-<!-- Bouton flottant -->
-<button id="cart-toggle" onclick="openCart()">
-  🛒 <span id="cart-count">0</span> items
-</button>
+  <div class="cart-panel-backdrop" id="cart-backdrop"></div>
 
-<!-- Panneau latéral -->
-<div id="cart-panel">
-  <div id="cart-header">
-    <span>Your selection</span>
-    <button onclick="closeCart()">✕</button>
-  </div>
+  <aside class="cart-panel" id="cart-panel">
+    <header class="cart-panel-header">
+      <div class="cart-panel-title">Your selection</div>
+      <button class="cart-panel-close" id="cart-close" aria-label="Close cart">&times;</button>
+    </header>
+    <div class="cart-panel-body">
+      <div id="cart-items"></div>
+      <div class="cart-empty" id="cart-empty">Your selection is empty.</div>
+    </div>
+    <footer class="cart-panel-footer">
+      <div class="cart-total-row">
+        <span class="cart-total-label">Total</span>
+        <span class="cart-total-value" id="cart-total">$0.00</span>
+      </div>
+      <button class="cart-checkout-btn" id="cart-checkout">
+        <span>Checkout</span>
+      </button>
+      <div class="cart-checkout-sub" id="cart-currency-label">
+        Secure payment in USD via Stripe
+      </div>
+    </footer>
+  </aside>
 
-  <div id="cart-body">
-    <ul id="cart-items">
-      <li style="border:none; opacity:0.7;">No items selected yet.</li>
-    </ul>
-  </div>
+  <button class="cart-toggle" id="cart-toggle">
+    <span class="cart-toggle-icon">🛒</span>
+    <span>Selection</span>
+    <span class="cart-toggle-count" id="cart-count">0</span>
+  </button>
 
-  <div id="cart-footer">
-    <button id="checkout-button" onclick="checkout()">Checkout</button>
-  </div>
-</div>
+  <script>
+    const STORAGE_KEY = "harmony_lab_cart_v1";
 
-<script>
-  let selectedItems = [];
+    let cart = {
+      currency: "USD",
+      items: []
+    };
 
-  // Appelé depuis Google Sites via postMessage
-  window.addEventListener("message", (event) => {
-    if (event.data.type === "addItem") {
-      addToSelection(event.data.priceId, event.data.name);
+    function loadCart() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.items)) {
+            cart = parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load cart", e);
+      }
+      if (!cart.currency) cart.currency = "USD";
+      if (!Array.isArray(cart.items)) cart.items = [];
     }
-  });
 
-  function addToSelection(priceId, name) {
-    selectedItems.push({ price: priceId, name: name, quantity: 1 });
-    updateCartCount();
-    updateCartPanel();
-  }
-
-  function updateCartCount() {
-    document.getElementById("cart-count").textContent = selectedItems.length;
-  }
-
-  function updateCartPanel() {
-    const list = document.getElementById("cart-items");
-    list.innerHTML = "";
-
-    if (selectedItems.length === 0) {
-      list.innerHTML = "<li style='border:none; opacity:0.7;'>No items selected yet.</li>";
-      return;
+    function saveCart() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+      } catch (e) {
+        console.warn("Failed to save cart", e);
+      }
     }
 
-    selectedItems.forEach(item => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <span>${item.name}</span>
-        <span>x${item.quantity}</span>
-      `;
-      list.appendChild(li);
+    function formatMoney(amount, currency) {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: currency || "USD",
+        minimumFractionDigits: 2
+      }).format(amount || 0);
+    }
+
+    function getTotal() {
+      return cart.items.reduce((sum, item) => sum + item.amount * item.quantity, 0);
+    }
+
+    function getCount() {
+      return cart.items.reduce((sum, item) => sum + item.quantity, 0);
+    }
+
+    function addItem(priceId, name, amount) {
+      amount = Number(amount || 0);
+      if (!priceId || !name || !amount) return;
+      const existing = cart.items.find(i => i.priceId === priceId);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.items.push({
+          id: priceId,
+          priceId,
+          name,
+          amount,
+          quantity: 1
+        });
+      }
+      saveCart();
+      renderCart();
+    }
+
+    function updateQuantity(priceId, quantity) {
+      quantity = Number(quantity);
+      if (isNaN(quantity) || quantity < 1) quantity = 1;
+      if (quantity > 99999999) quantity = 99999999;
+      const item = cart.items.find(i => i.priceId === priceId);
+      if (!item) return;
+      item.quantity = quantity;
+      saveCart();
+      renderCart();
+    }
+
+    function removeItem(priceId) {
+      cart.items = cart.items.filter(i => i.priceId !== priceId);
+      saveCart();
+      renderCart();
+    }
+
+    const cartPanel = document.getElementById("cart-panel");
+    const cartBackdrop = document.getElementById("cart-backdrop");
+    const cartToggle = document.getElementById("cart-toggle");
+    const cartClose = document.getElementById("cart-close");
+    const cartItemsEl = document.getElementById("cart-items");
+    const cartEmptyEl = document.getElementById("cart-empty");
+    const cartTotalEl = document.getElementById("cart-total");
+    const cartCountEl = document.getElementById("cart-count");
+    const cartCheckoutBtn = document.getElementById("cart-checkout");
+    const cartCurrencyLabel = document.getElementById("cart-currency-label");
+
+    function openCart() {
+      cartPanel.classList.add("open");
+      cartBackdrop.style.display = "block";
+    }
+
+    function closeCart() {
+      cartPanel.classList.remove("open");
+      cartBackdrop.style.display = "none";
+    }
+
+    function renderCart() {
+      const items = cart.items;
+      const hasItems = items.length > 0;
+
+      cartItemsEl.innerHTML = "";
+      if (!hasItems) {
+        cartEmptyEl.style.display = "block";
+      } else {
+        cartEmptyEl.style.display = "none";
+        items.forEach(item => {
+          const subtotal = item.amount * item.quantity;
+
+          const row = document.createElement("div");
+          row.className = "cart-item";
+
+          const header = document.createElement("div");
+          header.className = "cart-item-header";
+
+          const nameEl = document.createElement("div");
+          nameEl.className = "cart-item-name";
+          nameEl.textContent = item.name;
+
+          const priceEl = document.createElement("div");
+          priceEl.className = "cart-item-price";
+          priceEl.textContent = formatMoney(item.amount, cart.currency);
+
+          header.appendChild(nameEl);
+          header.appendChild(priceEl);
+
+          const controls = document.createElement("div");
+          controls.className = "cart-item-controls";
+
+          const qtyControls = document.createElement("div");
+          qtyControls.className = "cart-qty-controls";
+
+          const minusBtn = document.createElement("button");
+          minusBtn.className = "cart-qty-btn";
+          minusBtn.textContent = "−";
+          minusBtn.addEventListener("click", () => {
+            updateQuantity(item.priceId, item.quantity - 1);
+          });
+
+          const qtyInput = document.createElement("input");
+          qtyInput.className = "cart-qty-input";
+          qtyInput.type = "number";
+          qtyInput.min = "1";
+          qtyInput.max = "99999999";
+          qtyInput.value = item.quantity;
+          qtyInput.addEventListener("change", (e) => {
+            updateQuantity(item.priceId, e.target.value);
+          });
+
+          const plusBtn = document.createElement("button");
+          plusBtn.className = "cart-qty-btn";
+          plusBtn.textContent = "+";
+          plusBtn.addEventListener("click", () => {
+            updateQuantity(item.priceId, item.quantity + 1);
+          });
+
+          qtyControls.appendChild(minusBtn);
+          qtyControls.appendChild(qtyInput);
+          qtyControls.appendChild(plusBtn);
+
+          const subtotalEl = document.createElement("div");
+          subtotalEl.className = "cart-item-subtotal";
+          subtotalEl.textContent = "Subtotal: " + formatMoney(subtotal, cart.currency);
+
+          const removeBtn = document.createElement("button");
+          removeBtn.className = "cart-item-remove";
+          removeBtn.innerHTML = "🗑️";
+          removeBtn.title = "Remove";
+          removeBtn.addEventListener("click", () => {
+            removeItem(item.priceId);
+          });
+
+          controls.appendChild(qtyControls);
+          controls.appendChild(subtotalEl);
+          controls.appendChild(removeBtn);
+
+          row.appendChild(header);
+          row.appendChild(controls);
+
+          cartItemsEl.appendChild(row);
+        });
+      }
+
+      const total = getTotal();
+      cartTotalEl.textContent = formatMoney(total, cart.currency);
+      cartCountEl.textContent = getCount();
+
+      cartCurrencyLabel.textContent =
+        "Secure payment in " + cart.currency + " via Stripe";
+    }
+
+    function parseQuery() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        action: params.get("action") || detectActionFromPath(),
+        price: params.get("price"),
+        name: params.get("name"),
+        amount: params.get("amount"),
+        currency: params.get("currency")
+      };
+    }
+
+    function detectActionFromPath() {
+      const path = window.location.pathname || "/";
+      if (path.startsWith("/add")) return "add";
+      if (path.startsWith("/cart")) return "cart";
+      if (path.startsWith("/checkout")) return "checkout";
+      return null;
+    }
+
+    async function detectCurrencyFromIP() {
+      try {
+        const res = await fetch("https://ipapi.co/json/");
+        if (!res.ok) return;
+        const data = await res.json();
+        const country = data && data.country;
+        let currency = "USD";
+
+        if (country === "FR") currency = "EUR";
+        else if (country === "GB") currency = "GBP";
+        else if (country === "CA") currency = "CAD";
+        else if (country === "AU") currency = "AUD";
+        else if (country === "US") currency = "USD";
+
+        // Aujourd’hui tu travailles en USD, mais on garde la structure prête.
+        // Si tu veux forcer USD pour tout le monde, commente la ligne suivante.
+        cart.currency = currency || "USD";
+        renderCart();
+      } catch (e) {
+        console.warn("Geo IP failed, staying in USD", e);
+      }
+    }
+
+    function handleUrlAction() {
+      const q = parseQuery();
+
+      if (q.currency) {
+        cart.currency = q.currency.toUpperCase();
+      }
+
+      if (q.action === "add") {
+        if (q.price && q.name && q.amount) {
+          addItem(q.price, q.name, q.amount);
+        }
+        openCart();
+      } else if (q.action === "cart") {
+        openCart();
+      } else if (q.action === "checkout") {
+        openCart();
+        startCheckout();
+      }
+    }
+
+    async function startCheckout() {
+      if (!cart.items.length) return;
+
+      // À connecter à ton backend Stripe plus tard :
+      /*
+      const res = await fetch("https://ton-backend.com/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currency: cart.currency,
+          items: cart.items.map(i => ({
+            priceId: i.priceId,
+            quantity: i.quantity
+          }))
+        })
+      });
+      const data = await res.json();
+      if (data && data.url) {
+        window.location.href = data.url;
+      }
+      */
+      alert("Checkout Stripe à connecter – le cart est prêt.");
+    }
+
+    cartToggle.addEventListener("click", () => {
+      if (cartPanel.classList.contains("open")) {
+        closeCart();
+      } else {
+        openCart();
+      }
     });
-  }
 
-  function openCart() {
-    document.getElementById("cart-panel").classList.add("open");
-  }
-
-  function closeCart() {
-    document.getElementById("cart-panel").classList.remove("open");
-  }
-
-  async function checkout() {
-    if (selectedItems.length === 0) {
-      alert("Your selection is empty.");
-      return;
-    }
-
-    const res = await fetch("https://TON-BACKEND/create-checkout-session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items: selectedItems })
+    cartClose.addEventListener("click", closeCart);
+    cartBackdrop.addEventListener("click", closeCart);
+    cartCheckoutBtn.addEventListener("click", () => {
+      startCheckout();
     });
 
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-  }
-</script>
-
+    loadCart();
+    renderCart();
+    handleUrlAction();
+    detectCurrencyFromIP(); // détection IP → devise suggérée (USD reste la base)
+  </script>
 </body>
 </html>

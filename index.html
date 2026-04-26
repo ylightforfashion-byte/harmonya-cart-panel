@@ -580,29 +580,36 @@
       }
     }
 
-    async function startCheckout() {
-      if (!cart.items.length) return;
+   async function startCheckout() {
+  if (!cart.items.length) return;
 
-      // À connecter à ton backend Stripe plus tard :
-      /*
-      const res = await fetch("https://ton-backend.com/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currency: cart.currency,
-          items: cart.items.map(i => ({
-            priceId: i.priceId,
-            quantity: i.quantity
-          }))
-        })
-      });
-      const data = await res.json();
-      if (data && data.url) {
-        window.location.href = data.url;
-      }
-      */
-      alert("Checkout Stripe à connecter – le cart est prêt.");
+  try {
+    const res = await fetch("https://harmonya-backend-1.onrender.com/create-checkout-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        currency: cart.currency,
+        items: cart.items.map(i => ({
+          priceId: i.priceId,
+          quantity: i.quantity
+        }))
+      })
+    });
+
+    const data = await res.json();
+
+    if (data && data.url) {
+      window.location.href = data.url; // Redirect to Stripe Checkout
+    } else {
+      alert("Error: unable to open Stripe Checkout.");
+      console.error("Unexpected Stripe response:", data);
     }
+
+  } catch (err) {
+    alert("Connection error with Stripe server.");
+    console.error("Checkout error:", err);
+  }
+}
 
     cartToggle.addEventListener("click", () => {
       if (cartPanel.classList.contains("open")) {
